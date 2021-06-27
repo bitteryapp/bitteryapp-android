@@ -42,6 +42,7 @@
 
 #define EVENT_LUCKY_START 0x00001
 #define EVENT_LUCKY_END   0x00002
+#define EVENT_LUCKY_PROGRESS   0x00003
 
 using base::android::JavaParamRef;
 using base::android::ScopedJavaLocalRef;
@@ -170,7 +171,7 @@ static void* do_lucky_attack_thread(void* data) {
   size_t strsize_wif = 128;
   btc_key key = {0};
   btc_pubkey pubkey = {0};
-  long sec = (long)data;
+  long sec = (long)data, deltatm = 0;
 
   JNIEnv* env = base::android::AttachCurrentThreadWithName("bittery");
   ScopedJavaLocalRef<jstring> empty = ConvertUTF8ToJavaString(env, "");
@@ -217,6 +218,10 @@ static void* do_lucky_attack_thread(void* data) {
     ri.key  = string(privkey_wif);
     ri.magic_key = addr_to_magic_key(address_p2wpkh);
     luckylists.push_back(ri);
+    if(time(NULL) - tm > deltatm) {
+      deltatm = time(NULL) - tm;
+      Java_BitteryCore_pushMessage(env, EVENT_LUCKY_PROGRESS, deltatm, sec, empty);
+    }
   } while(time(NULL) - tm <= sec);
   sort(luckylists.begin(), luckylists.end(), compare_magic_key);
   LOG(INFO) << "do_lucky_attack_thread end";

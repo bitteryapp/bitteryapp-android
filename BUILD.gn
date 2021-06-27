@@ -202,6 +202,7 @@ android_resources("bittery_apk_resources") {
     "java/res/drawable/key_copy.png",
     "java/res/drawable/bitcoin_star.png",
     "java/res/drawable/circular.xml",
+    "java/res/drawable/progressbar.xml",
     "java/res/drawable/image.xml",
     "java/res/mipmap-hdpi/app_icon.png",
     "java/res/mipmap-mdpi/app_icon.png",

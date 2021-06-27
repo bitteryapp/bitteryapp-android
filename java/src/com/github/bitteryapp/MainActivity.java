@@ -20,6 +20,7 @@ import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.AdSize;
 import android.widget.FrameLayout;
+import android.widget.ProgressBar;
 import android.content.SharedPreferences;
 import android.content.DialogInterface;
 import android.util.DisplayMetrics;
@@ -67,14 +68,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private ArrayList<BitteryHit> mHits = new ArrayList<BitteryHit>();
     private BitteryHitAdapter mAdapter = null;
     private RecyclerView mBTCHits = null;
+    private ProgressBar mProgressBar = null;
     private boolean[] mSelection = new boolean[500];
     private boolean   mSelectionUpdate = false;
     private String[] mRichlist = new String[500];
+    private float mAX = 0, mAY = 0, mAZ = 0;
 
     public static final int EVENT_SHOW_RICHDLG = 0x0000;
     public static final int EVENT_LUCKY_START = 0x00001;
     public static final int EVENT_LUCKY_END   = 0x00002;
-    public static final int EVENT_DATA_CHANGED = 0x00003;
+    public static final int EVENT_LUCKY_PROGRESS = 0x00003;
+    public static final int EVENT_DATA_CHANGED = 0x00004;
 
     private void loadBanner() {
         // Create an ad request.
@@ -112,7 +116,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private void showRichListDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle(R.string.rich_list_dialog_title).setIcon(R.drawable.bitcoin_hit_icon);
-        //builder.setMessage("Launching this missile will destroy the entire universe. Is this what you intended to do?");
         builder.setMultiChoiceItems(mRichlist, mSelection, new DialogInterface.OnMultiChoiceClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which, boolean isChecked) {
@@ -168,13 +171,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public void onSensorChanged(SensorEvent e) {
         float[] val = e.values;
 
-        //Log.i("Bittery", "onSensorChanged (" + val[0] + "," + val[1] + "," + val[2] + ")");
-        if(mLuckyStatus == false) {
-            if((Math.abs(val[0]) > 18 || Math.abs(val[1]) > 18 ||Math.abs(val[2]) > 18)){
-                mLuckyStatus = true;
-                mBitteryCore.doLuckyShake(5);
+        if(mAX + mAY + mAZ != 0) {
+            if(mLuckyStatus == false) {
+                float delta = mAX + mAY + mAZ - val[0] - val[1] - val[2];
+                if(Math.abs(delta) > 8) {
+                    Log.i("BitteryApp", "onSensorChanged delta " + Float.toString(delta));
+                    mLuckyStatus = true;
+                    mBitteryCore.doLuckyShake(10);
+                }
             }
         }
+        mAX = val[0];
+        mAY = val[1];
+        mAZ = val[2];
     }
 
     public void loadConsentForm() {
@@ -268,7 +277,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             @Override
             public void handleMessage(Message msg) {
                 super.handleMessage(msg);
-                Log.i("Bittery", "bitterycore message what: " + msg.what + " arg1: " + msg.arg1);
 
                 switch(msg.what) {
                     case EVENT_DATA_CHANGED:
@@ -280,13 +288,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     case EVENT_LUCKY_START:
                     mVibrator.vibrate(88);
                     break;
+                    case EVENT_LUCKY_PROGRESS:
+                    int npos = (msg.arg1 * 100) / msg.arg2;
+                    mProgressBar.setProgress(npos, true);
+                    break;
                     case EVENT_LUCKY_END:
                     int match = mBitteryCore.match();
                     String luckyAddr = mBitteryCore.luckyAddr(msg.arg1);
                     String luckyPriv = mBitteryCore.luckyPriv(msg.arg1);
                     String richAddr = mBitteryCore.richAddr(msg.arg2);
                     int balance = mBitteryCore.richBalance(msg.arg2);
-                    Log.i("Bittery", "EVENT_LUCKY_END addr:" + luckyAddr + " key:" + luckyPriv);
 
                     int score = (match * 100)/richAddr.length();
                     if(score> 15) {
@@ -301,6 +312,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         mFirebaseAnalytics.logEvent("LuckyShake", bundle);
                     }
                     mVibrator.vibrate(188);
+                    mProgressBar.setProgress(0, true);
 
                     mLuckyStatus = false;
                     mHits.add(0, new BitteryHit(luckyPriv, luckyAddr, richAddr, balance, match, mBitteryCore));
@@ -311,6 +323,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         };
 
+        mProgressBar = (ProgressBar) findViewById(R.id.progressbar);
         mBTCHits = (RecyclerView) findViewById(R.id.btc_hits);
         mAdapter = new BitteryHitAdapter(mHits);
         mBTCHits.setAdapter(mAdapter);
@@ -325,7 +338,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
-        if(isAdmobDisabled) {
+        if(false == isAdmobDisabled) {
             adContainerView = findViewById(R.id.ad_view_container);
             AdRequest adRequest = new AdRequest.Builder().build();
             adContainerView.post(new Runnable() {
@@ -339,13 +352,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         new Thread(new Runnable() {
             @Override
             public void run() {
-                boolean itemChanged = false;
                 mBitteryCore = new BitteryCore(handler);
+
+                boolean itemChanged = false;
                 Map<String, ?> allEntries = ContextUtils.getAppSharedPreferences().getAll();
                 for (Map.Entry<String, ?> entry : allEntries.entrySet()) {
                     if(entry.getKey().startsWith("SCORE")) {
                         String[] info = entry.getValue().toString().split(";");
-                        Log.i("JBittery", "key " + entry.getKey() + " : " + entry.getValue().toString() + " size " + info.length);
                         if(info.length == 5) {
                             mHits.add(new BitteryHit(info[2], info[1], info[0], Integer.valueOf(info[3]), Integer.valueOf(info[4]), mBitteryCore));
                             itemChanged = true;
@@ -361,9 +374,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                 String selection = ContextUtils.getAppSharedPreferences().getString("RICHLIST_SELECTION", "");
                 if(selection.length() == 0) {
-                    Message message = Message.obtain();
-                    message.what = EVENT_SHOW_RICHDLG;
-                    handler.sendMessage(message);
+                    if(savedInstanceState != null) {
+                        Message message = Message.obtain();
+                        message.what = EVENT_SHOW_RICHDLG;
+                        handler.sendMessage(message);
+                    }
                 } else {
                     if(itemChanged) {
                         Message message = Message.obtain();
@@ -381,9 +396,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                Log.i("JBittery", "FloatingActionButton onClick " + mBitteryCore);
                 mLuckyStatus = true;
-                mBitteryCore.doLuckyShake(5);
+                mBitteryCore.doLuckyShake(10);
             }
         });
     }
