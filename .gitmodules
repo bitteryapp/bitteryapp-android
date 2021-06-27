@@ -1,0 +1,3 @@
+[submodule "jni/libbtc"]
+	path = jni/libbtc
+	url = git@github.com:libbtc/libbtc.git

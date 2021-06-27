@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2015 The Chromium Authors. All rights reserved.
+     Use of this source code is governed by a BSD-style license that can be
+     found in the LICENSE file. -->
+
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The application name displayed to the user. -->
+    <string name="app_name" translatable="true">Bittery</string>
+    <string name="shake_tips" translatable="true">Shake with your luck</string>
+    <string name="copy_key" translatable="true">Copy the key</string>
+    <string name="rich_list_dialog_title" translatable="true">Bitcoin Top500 Public Address</string>
+    <string name="rich_list_dialog_selectall" translatable="true">SelectAll</string>
+    <string name="rich_list_dialog_done" translatable="true">Done</string>
+</resources>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2015 The Chromium Authors. All rights reserved.
+     Use of this source code is governed by a BSD-style license that can be
+     found in the LICENSE file. -->
+
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The application name displayed to the user. -->
+    <string name="app_name" translatable="true">比乐透</string>
+    <string name="shake_tips" translatable="true">幸运摇一摇</string>
+    <string name="copy_key" translatable="true">复制私钥</string>
+    <string name="rich_list_dialog_title" translatable="true">Bitcoin Top500 公开地址</string>
+    <string name="rich_list_dialog_selectall" translatable="true">全部选择</string>
+    <string name="rich_list_dialog_done" translatable="true">确定</string>
+</resources>

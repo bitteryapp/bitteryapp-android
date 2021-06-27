@@ -1,0 +1,289 @@
+# Copyright (c) 2013 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("//build/buildflag_header.gni")
+import("//build/config/chromecast_build.gni")
+import("//build/config/compiler/compiler.gni")
+import("//build/config/crypto.gni")
+import("//build/config/features.gni")
+import("//build/config/ui.gni")
+import("//net/features.gni")
+import("//testing/libfuzzer/fuzzer_test.gni")
+import("//testing/test.gni")
+import("//third_party/icu/config.gni")
+import("//third_party/protobuf/proto_library.gni")
+import("//tools/grit/grit_rule.gni")
+import("//url/features.gni")
+
+import("//build/config/android/config.gni")
+import("//build/config/android/rules.gni")
+import("//chrome/android/modules/buildflags.gni")
+
+# The way the cache uses mmap() is inefficient on some Android devices. If
+# this flag is set, we hackily avoid using mmap() in the disk cache. We are
+# pretty confident that mmap-ing the index would not hurt any existing x86
+# android devices, but we cannot be so sure about the variety of ARM devices.
+# So enable it for x86 only for now.
+#posix_avoid_mmap = is_android && current_cpu != "x86"
+
+#use_v8_in_net = !is_ios && !is_proto_quic
+#enable_built_in_dns = !is_ios && !is_proto_quic
+
+# Unix sockets are not supported on iOS or NaCl.
+#enable_unix_sockets = is_posix && !is_ios && !is_nacl
+
+# x86/x64 cast_shell builds run on regular trybots and can use python runtime
+# and remote test server. ARM cast_shell builds don't have python runtime.
+#is_arm_cast_shell_build =
+#    is_chromecast && (current_cpu == "arm" || current_cpu == "arm64")
+
+# Python works only on Linux, MacOS and Windows so exclude the others,
+# chromecast, android, fuchsia, ios.
+#enable_python_utils =
+#    !is_arm_cast_shell_build && !is_android && !is_fuchsia && !is_ios
+
+config("bittery_config") {
+  include_dirs = [
+    ".",
+    "jni/libbtc/include/",
+    "jni/libbtc/src/secp256k1",
+  ]
+
+  if (is_clang) {
+    cflags = [
+      "-Wno-missing-braces",
+      "-Wno-unused-function",
+      "-Wno-unused-variable",
+      "-Wno-int-to-void-pointer-cast",
+      #"-Wno-sign-compare",
+      #"-Wno-misleading-indentation",
+      #"-Wno-extra-semi",
+      #"-Wno-tautological-constant-out-of-range-compare",
+    ]
+  }
+}
+
+component("trezor-crypto") {
+  sources = [
+    "jni/libbtc/src/trezor-crypto/base58.c",
+    "jni/libbtc/src/trezor-crypto/blake2b.c",
+    "jni/libbtc/src/trezor-crypto/blake256.c",
+    "jni/libbtc/src/trezor-crypto/groestl.c",
+    "jni/libbtc/src/trezor-crypto/hasher.c",
+    "jni/libbtc/src/trezor-crypto/hmac.c",
+    "jni/libbtc/src/trezor-crypto/memzero.c",
+    "jni/libbtc/src/trezor-crypto/ripemd160.c",
+    "jni/libbtc/src/trezor-crypto/segwit_addr.c",
+    "jni/libbtc/src/trezor-crypto/sha2.c",
+    "jni/libbtc/src/trezor-crypto/sha3.c",
+  ]
+}
+
+component("bittery_libbtc") {
+  sources = [
+    "jni/libbtc/src/secp256k1/src/secp256k1.c",
+    "jni/libbtc/src/aes256_cbc.c",
+    "jni/libbtc/src/base58.c",
+    "jni/libbtc/src/bip32.c",
+    "jni/libbtc/src/block.c",
+    "jni/libbtc/src/buffer.c",
+    "jni/libbtc/src/chainparams.c",
+    "jni/libbtc/src/commontools.c",
+    "jni/libbtc/src/cstr.c",
+    "jni/libbtc/src/ctaes.c",
+    "jni/libbtc/src/ecc_key.c",
+    "jni/libbtc/src/ecc_libsecp256k1.c",
+    "jni/libbtc/src/memory.c",
+    "jni/libbtc/src/random.c",
+    "jni/libbtc/src/ripemd160.c",
+    "jni/libbtc/src/script.c",
+    "jni/libbtc/src/serialize.c",
+    "jni/libbtc/src/tx.c",
+    "jni/libbtc/src/utils.c",
+    "jni/libbtc/src/vector.c",
+  ]
+
+  defines = [
+    "RANDOM_DEVICE=\"/dev/urandom\"",
+    "USE_NUM_GMP",
+    "USE_FIELD_10X26",
+    "USE_FIELD_INV_BUILTIN",
+    "USE_SCALAR_8X32",
+    "USE_SCALAR_INV_BUILTIN",
+    "ENABLE_MODULE_RECOVERY",
+    "ECMULT_WINDOW_SIZE=15",
+    "ECMULT_GEN_PREC_BITS=4",
+  ]
+
+  deps = [
+    ":trezor-crypto",
+    "//base",
+    "//crypto",
+  ]
+
+  public_configs = [ ":bittery_config" ]
+}
+
+generate_jni("bitterycore_jni") {
+  sources = [
+    "java/src/com/github/bitteryapp/BitteryCore.java",
+  ]
+  deps = [
+    "//base:base_java",
+  ]
+}
+
+android_library("bittery_core_java") {
+  sources = [
+    "java/src/com/github/bitteryapp/BitteryCore.java",
+  ]
+
+  deps = [
+    "//base:base_java",
+  ]
+
+  srcjar_deps = [
+  ]
+  resources_package = "com.github.bitteryapp"
+}
+
+shared_library("bitterycore") {
+  sources = [
+    "jni/bitterycore.cc",
+  ]
+  deps = [
+    ":bitterycore_jni",
+    ":bittery_libbtc",
+    "//base",
+    "//components/qr_code_generator",
+    "//ui/gfx",
+  ]
+  public_configs = [ ":bittery_config" ]
+}
+
+android_library("bittery_java") {
+  resources_package = "com.github.bitteryapp"
+
+  deps = [
+    ":bittery_apk_resources",
+    ":bittery_core_java",
+    "//base:base_java",
+    "//third_party/androidx:androidx_appcompat_appcompat_java",
+    "//third_party/androidx:androidx_recyclerview_recyclerview_java",
+    "//third_party/androidx:androidx_coordinatorlayout_coordinatorlayout_java",
+    "//third_party/android_deps:android_firebase_bittery_java",
+    "//ui/android:ui_no_recycler_view_java",
+  ]
+
+  sources = [
+    "java/src/com/github/bitteryapp/BitteryHitAdapter.java",
+    "java/src/com/github/bitteryapp/BitteryHit.java",
+    "java/src/com/github/bitteryapp/MainActivity.java",
+  ]
+}
+
+android_resources("bittery_apk_resources") {
+  sources = [
+    "java/firebase/values/strings.xml",
+    "java/res/menu/setup.xml",
+    "java/res/values/styles.xml",
+    "java/res/values/dimens.xml",
+    "java/res/values/colors.xml",
+    "java/res/layout/activity_main.xml",
+    "java/res/layout/bittery_hit_item.xml",
+    "java/res/layout/bittery_key_info.xml",
+    "java/res/drawable/setup.png",
+    "java/res/drawable/bittery_actionbar_bg.png",
+    "java/res/drawable/bitcoin_hit_icon.png",
+    "java/res/drawable/phone_shake.png",
+    "java/res/drawable/bitcoin.png",
+    "java/res/drawable/bitcoin_key.png",
+    "java/res/drawable/key_copy.png",
+    "java/res/drawable/bitcoin_star.png",
+    "java/res/drawable/circular.xml",
+    "java/res/drawable/image.xml",
+    "java/res/mipmap-hdpi/app_icon.png",
+    "java/res/mipmap-mdpi/app_icon.png",
+    "java/res/mipmap-xhdpi/app_icon.png",
+    "java/res/mipmap-xxhdpi/app_icon.png",
+    "java/res/mipmap-xxxhdpi/app_icon.png",
+    "java/res/values/channel_constants.xml",
+    "java/res/values-zh-rCN/channel_constants.xml",
+    "java/res/values-zh-rHK/channel_constants.xml",
+    "java/res/values-zh-rTW/channel_constants.xml",
+  ]
+}
+
+executable("btctool") {
+  sources = [
+    "jni/btctool.cc",
+  ]
+
+  defines = [
+  ]
+  deps = [
+    ":bittery_libbtc",
+    "//base",
+  ]
+}
+
+android_apk("bittery_apk") {
+
+  # Multidex requires a custom Application class to initialize it. Simpler to
+  # just disable it.
+  enable_multidex = false
+
+  min_sdk_version = 21
+
+  # Required on Android Q+ to read from /sdcard when installing certs.
+  target_sdk_version = 31
+  strip_resource_names = true
+  short_resource_paths = true
+  proguard_enabled = true
+
+  proguard_configs = [
+    "//bittery/java/proguard.flags",
+    "//chrome/android/proguard/main.flags",
+    "//base/android/proguard/chromium_apk.flags",
+    "//base/android/proguard/chromium_code.flags",
+  ]
+
+  deps = [
+    ":bittery_java",
+  ]
+  resources_config_paths = [ "java/aapt2.config" ]
+  android_manifest = "java/AndroidManifest.xml"
+  apk_name = "bittery"
+  shared_libraries = [ ":bitterycore" ]
+}
+
+android_apk("bitterypro_apk") {
+
+  # Multidex requires a custom Application class to initialize it. Simpler to
+  # just disable it.
+  enable_multidex = false
+
+  min_sdk_version = 21
+
+  # Required on Android Q+ to read from /sdcard when installing certs.
+  target_sdk_version = 31
+  strip_resource_names = true
+  short_resource_paths = true
+  proguard_enabled = true
+
+  proguard_configs = [
+    "//bittery/java/proguard.flags",
+    "//chrome/android/proguard/main.flags",
+    "//base/android/proguard/chromium_apk.flags",
+    "//base/android/proguard/chromium_code.flags",
+  ]
+
+  deps = [
+    ":bittery_java",
+  ]
+  resources_config_paths = [ "java/aapt2.config" ]
+  android_manifest = "java/AndroidManifestPro.xml"
+  apk_name = "bitterypro"
+  shared_libraries = [ ":bitterycore" ]
+}
