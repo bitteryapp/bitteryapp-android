@@ -45,7 +45,6 @@ public class BitteryCore {
 
     public Bitmap qrBitmap(String str) {
         Bitmap qr = getQRBitmap(str);
-        Log.i("JBittery", "getMyQRBitmap " + qr);
         return qr;
     }
 

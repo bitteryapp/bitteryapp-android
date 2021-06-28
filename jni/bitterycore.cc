@@ -38,8 +38,6 @@
 
 #include "bittery/bitterycore_jni/BitteryCore_jni.h"
 
-#define ADB(...) __android_log_print(ANDROID_LOG_DEBUG, "BitteryCore" , __VA_ARGS__)
-
 #define EVENT_LUCKY_START 0x00001
 #define EVENT_LUCKY_END   0x00002
 #define EVENT_LUCKY_PROGRESS   0x00003
@@ -177,7 +175,6 @@ static void* do_lucky_attack_thread(void* data) {
   ScopedJavaLocalRef<jstring> empty = ConvertUTF8ToJavaString(env, "");
   Java_BitteryCore_pushMessage(env, EVENT_LUCKY_START, 0, 0, empty);
 
-  LOG(INFO) << "do_lucky_attack_thread do_lucky " << sec;
   do {
     btc_richitem ri = {0};
     char privkey_wif[128] = {0};
@@ -224,12 +221,10 @@ static void* do_lucky_attack_thread(void* data) {
     }
   } while(time(NULL) - tm <= sec);
   sort(luckylists.begin(), luckylists.end(), compare_magic_key);
-  LOG(INFO) << "do_lucky_attack_thread end";
 
   int bstm = time(NULL);
   for(myidx = 0 ; myidx < luckylists.size(); myidx ++) {
     if(luckylists[myidx].magic_key < richlists[0].magic_key) {
-      //LOG(INFO) << "IGNORE (addr:" << r.addr << " key:" << r.key << ")";
       continue;
     }
 
@@ -245,9 +240,9 @@ static void* do_lucky_attack_thread(void* data) {
             luckyidx = myidx;
             richidx = m;
             g_match_num = match;
-            LOG(INFO) << "luckyscore " << luckyscore << " score " << score;
-            LOG(INFO) << "luckyitem addr:" << luckylists[myidx].addr << " key:" << luckylists[myidx].key;
-            LOG(INFO) << "RICHLISTS addr:" << richlists[m].addr;
+            //LOG(INFO) << "luckyscore " << luckyscore << " score " << score;
+            //LOG(INFO) << "luckyitem addr:" << luckylists[myidx].addr << " key:" << luckylists[myidx].key;
+            //LOG(INFO) << "RICHLISTS addr:" << richlists[m].addr;
           }
         }
         break;
@@ -263,7 +258,7 @@ static void* do_lucky_attack_thread(void* data) {
     //    break;
     //}
   }
-  LOG(INFO) << "binary_search time " << time(NULL) - bstm << "sec, keycnt:" << keycnt;
+  //LOG(INFO) << "binary_search time " << time(NULL) - bstm << "sec, keycnt:" << keycnt;
 
   char rich_info_cstr[128] = {0};
   snprintf(rich_info_cstr, 128, "%s %dBTC", luckylists[luckyidx].addr.c_str(), richlists[richidx].balance);
@@ -273,12 +268,10 @@ static void* do_lucky_attack_thread(void* data) {
 }
 
 static jstring _get_lucky_addr(JNIEnv* env, jclass jcaller, jint luckyidx) {
-  LOG(INFO) << "_get_lucky_addr " << luckylists[luckyidx].addr;
   return env->NewStringUTF(luckylists[luckyidx].addr.c_str());
 }
 
 static jstring _get_lucky_priv(JNIEnv* env, jclass jcaller, jint luckyidx) {
-  LOG(INFO) << "_get_lucky_priv " << luckylists[luckyidx].key;
   return env->NewStringUTF(luckylists[luckyidx].key.c_str());
 }
 
