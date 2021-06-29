@@ -190,6 +190,7 @@ android_resources("bittery_apk_resources") {
     "java/res/values/styles.xml",
     "java/res/values/dimens.xml",
     "java/res/values/colors.xml",
+    "java/res/values/games-ids.xml",
     "java/res/layout/activity_main.xml",
     "java/res/layout/bittery_hit_item.xml",
     "java/res/layout/bittery_key_info.xml",
@@ -255,7 +256,7 @@ android_apk("bittery_apk") {
   ]
   resources_config_paths = [ "java/aapt2.config" ]
   android_manifest = "java/AndroidManifest.xml"
-  apk_name = "bittery"
+  apk_name = "bittery-${android_override_version_name}"
   shared_libraries = [ ":bitterycore" ]
 }
 
@@ -285,6 +286,6 @@ android_apk("bitterypro_apk") {
   ]
   resources_config_paths = [ "java/aapt2.config" ]
   android_manifest = "java/AndroidManifestPro.xml"
-  apk_name = "bitterypro"
+  apk_name = "bitterypro-${android_override_version_name}"
   shared_libraries = [ ":bitterycore" ]
 }
