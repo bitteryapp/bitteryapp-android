@@ -396,8 +396,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                mLuckyStatus = true;
-                mBitteryCore.doLuckyShake(10);
+                if(mLuckyStatus == false) {
+                    mLuckyStatus = true;
+                    mBitteryCore.doLuckyShake(10);
+                }
             }
         });
     }

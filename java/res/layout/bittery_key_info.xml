@@ -30,10 +30,10 @@
         android:paddingTop="2dp"
         android:paddingLeft="8dp"
         android:paddingBottom="6dp" >
-    <ImageView
+    <ImageView android:id="@+id/score"
+        android:background="@drawable/bitcoin_star"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:background="@drawable/bitcoin_star" />
+        android:layout_height="wrap_content" />
     <TextView android:id="@+id/hit_score"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
