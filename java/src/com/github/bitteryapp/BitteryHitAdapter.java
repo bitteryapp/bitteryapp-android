@@ -55,6 +55,9 @@ public class BitteryHitAdapter extends RecyclerView.Adapter<BitteryHitAdapter.Vi
             qr.setImageBitmap(hit.getKeyQR());
             TextView view = (TextView)h.findViewById(R.id.hit_info);
             view.setText(hit.getPrivKey());
+            //ImageView scoreImageView = (ImageView)h.findViewById(R.id.score);
+            //scoreImageView.setImageBitmap(hit.getScoreBitmap());
+
             TextView score = (TextView)h.findViewById(R.id.hit_score);
             score.setTextColor(Color.parseColor("#FF0000"));
             score.setText(Integer.toString(hit.getScore()));
@@ -92,7 +95,9 @@ public class BitteryHitAdapter extends RecyclerView.Adapter<BitteryHitAdapter.Vi
 
         btcText.setSpan(new ForegroundColorSpan(Color.parseColor("#0F9D58")), 0, nMatch, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         btcText.setSpan(new StyleSpan(android.graphics.Typeface.BOLD), 0, nMatch, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        btcText.setSpan(new StyleSpan(android.graphics.Typeface.ITALIC), nMatch + 1, hit.getBTCAddr().length(), Spanned.SPAN_EXCLUSIVE_INCLUSIVE);
+        if(nMatch < hit.getBTCAddr().length()) {
+            btcText.setSpan(new StyleSpan(android.graphics.Typeface.ITALIC), nMatch + 1, hit.getBTCAddr().length(), Spanned.SPAN_EXCLUSIVE_INCLUSIVE);
+        }
 
         TextView textView = holder.mHitInfo;
         textView.setText(btcText);

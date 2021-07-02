@@ -31,4 +31,7 @@ public class BitteryHit {
     public Bitmap getKeyQR() {
         return mBitteryCore.qrBitmap(mPrivKey);
     }
+    public Bitmap getScoreBitmap() {
+        return mBitteryCore.scoreBitmap((mMatch * 100)/mRichAddr.length());
+    }
 }

@@ -48,6 +48,11 @@ public class BitteryCore {
         return qr;
     }
 
+    public Bitmap scoreBitmap(int score) {
+        Bitmap qr = getScoreBitmap(score);
+        return qr;
+    }
+
     public int match() {
         return getMatchNum();
     }
@@ -78,6 +83,7 @@ public class BitteryCore {
     private static native void initBitteryCore();
     private static native void publishMessage(String message);
     private static native Bitmap getQRBitmap(String str);
+    private static native Bitmap getScoreBitmap(int score);
     private static native String getLuckyAddr(int idx);
     private static native String getLuckyPriv(int idx);
     private static native String getRichAddr(int idx);

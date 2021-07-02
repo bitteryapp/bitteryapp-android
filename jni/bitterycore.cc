@@ -33,6 +33,7 @@
 #include "ui/gfx/android/java_bitmap.h"
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/geometry/size.h"
+//#include "third_party/skia/include/core/SkFont.h"
 
 #include "btc_richlist.h"
 
@@ -112,9 +113,7 @@ static void load_btc_richlist() {
     }
   }
 
-  //for(auto r: richlists) {
-  //  LOG(INFO) << "richlists.magic_key " << r.magic_key  << " addr " << r.addr;
-  //}
+
 }
 
 static void _set_selection(JNIEnv* env, jclass jcaller, jstring j_selection) {
@@ -128,6 +127,12 @@ static void _set_selection(JNIEnv* env, jclass jcaller, jstring j_selection) {
   if(g_richlist_sorted == false) {
     sort(richlists.begin(), richlists.end(), compare_magic_key);
     g_richlist_sorted = true;
+
+    //for(int idx = 0; idx < 500; idx++) {
+    //  LOG(INFO) << "richlists[" << idx <<"].key = " << richlists[idx].magic_key << " addr=" << richlists[idx].addr;
+    //for(auto r: richlists) {
+    //  LOG(INFO) << "richlists.magic_key " << r.magic_key  << " addr " << r.addr;
+    //}
   }
 }
 
@@ -141,26 +146,21 @@ static void _init_bittery_core(JNIEnv* env, jclass jcaller) {
 }
 
 static int _get_match_num(string myaddr, string richaddr, int* score) {
-  int match = 0, nskip = 1;
+  int match = 0;
   const char* p = myaddr.c_str(), *q = richaddr.c_str();
   int np = myaddr.size(), nq = richaddr.size();
 
-  if(*p != *q) return 0;
-  if(strncmp(p, "bc1", 3) == 0) {
-    nskip = 3;
-  }
-  p += nskip, q += nskip;
+  if(*p != *q || np != nq) return 0;
 
-  if(*p == *q && np == nq) {
-    if(myaddr == richaddr) return 100;
-
-    while(*p++ == *q++) match ++;
-    //score = (match*100)/myaddr.size();
-    *score = (match * 100)/(nq - nskip);
-    LOG(INFO) << "_get_match_num " << myaddr << " rich " << richaddr << " match " << match;
+  while(np && *p++ == *q++) {
+    match ++;
+    np --;
   }
 
-  return match + nskip;
+  *score = (match * 100)/nq;
+  LOG(INFO) << "_get_match_num " << myaddr << " rich " << richaddr << " match " << match << " score " << *score;
+
+  return match;
 }
 
 static void* do_lucky_attack_thread(void* data) {
@@ -187,6 +187,10 @@ static void* do_lucky_attack_thread(void* data) {
     btc_privkey_gen(&key);
     btc_privkey_encode_wif(&key, &btc_chainparams_main, privkey_wif, &strsize_wif);
     //utils_bin_to_hex(key.privkey, BTC_ECKEY_PKEY_LENGTH, privkey_hex);
+    //if(keycnt == 100) {
+    //  btc_privkey_decode_wif("L4K1ME8QzynfGL5WpRVfm8rCsBzXoxW9qjvVV4ZmSn8DptCfg96N", &btc_chainparams_main, &key);
+    //  strcpy(privkey_wif, "L4K1ME8QzynfGL5WpRVfm8rCsBzXoxW9qjvVV4ZmSn8DptCfg96N");
+    //}
 
     btc_pubkey_init(&pubkey);
     btc_pubkey_from_key(&key, &pubkey);
@@ -194,9 +198,11 @@ static void* do_lucky_attack_thread(void* data) {
     btc_pubkey_getaddr_p2pkh(&pubkey, &btc_chainparams_main, address_p2pkh);
     btc_pubkey_getaddr_p2sh_p2wpkh(&pubkey, &btc_chainparams_main, address_p2sh_p2wpkh);
     btc_pubkey_getaddr_p2wpkh(&pubkey, &btc_chainparams_main, address_p2wpkh);
-    //LOG(INFO) << "WIF:" << privkey_wif << " p2pkh address: " << address_p2pkh;
-    //LOG(INFO) << "WIF:" << privkey_wif << " p2sh-p2wpkh address: " << address_p2sh_p2wpkh;
-    //LOG(INFO) << "WIF:" << privkey_wif << " p2wpkh (bc1 / bech32) address: " << address_p2wpkh;
+    //if(keycnt == 100) {
+    //  LOG(INFO) << "WIF:" << privkey_wif << " p2pkh address: " << address_p2pkh;
+    //  LOG(INFO) << "WIF:" << privkey_wif << " p2sh-p2wpkh address: " << address_p2sh_p2wpkh;
+    //  LOG(INFO) << "WIF:" << privkey_wif << " p2wpkh (bc1 / bech32) address: " << address_p2wpkh;
+    //}
 
     btc_privkey_cleanse(&key);
     keycnt++;
@@ -240,7 +246,7 @@ static void* do_lucky_attack_thread(void* data) {
             luckyidx = myidx;
             richidx = m;
             g_match_num = match;
-            //LOG(INFO) << "luckyscore " << luckyscore << " score " << score;
+            //LOG(INFO) << "luckyscore " << luckyscore << " score " << score << " myidx " << myidx << " m " << m;
             //LOG(INFO) << "luckyitem addr:" << luckylists[myidx].addr << " key:" << luckylists[myidx].key;
             //LOG(INFO) << "RICHLISTS addr:" << richlists[m].addr;
           }
@@ -273,6 +279,45 @@ static jstring _get_lucky_addr(JNIEnv* env, jclass jcaller, jint luckyidx) {
 
 static jstring _get_lucky_priv(JNIEnv* env, jclass jcaller, jint luckyidx) {
   return env->NewStringUTF(luckylists[luckyidx].key.c_str());
+}
+
+static jobject _get_score_bitmap(JNIEnv* env, jclass jcaller, jint j_score) {
+  SkBitmap bitmap;
+
+  LOG(INFO) << "_get_score_bitmap " << j_score;
+  bitmap.allocN32Pixels(37 * kModuleSizePixels, 37 * kModuleSizePixels);
+  bitmap.eraseARGB(0xFF, 0xFF, 0xFF, 0xFF);
+  SkCanvas canvas(bitmap, SkSurfaceProps{});
+
+  SkPaint paint2;
+  paint2.setAntiAlias(true);
+  SkPath path;
+  float x = (37 * kModuleSizePixels)/2.0;
+  float y = (37 * kModuleSizePixels)/2.0;
+  //path.addCircle(x, y, (33*kModuleSizePixels)/2.0);
+  paint2.setColor(SkColorSetRGB(0x00, 0xdd, 0xff));
+  paint2.setStyle(SkPaint::kFill_Style);
+  canvas.drawPath(path, paint2);
+
+  float delta = 33*kModuleSizePixels*(118-j_score)/200.0;
+  SkPath path_score;
+  path_score.addCircle(x, y, delta);
+  paint2.setColor(SK_ColorRED);
+  paint2.setStyle(SkPaint::kFill_Style);
+  canvas.drawPath(path_score, paint2);
+
+
+  //path.addCircle(x, y, ((33.0-delta)*kModuleSizePixels)/2.0);
+  //canvas.drawPath(path, paint2);
+
+  //SkFont sf = SkFont(nullptr, 128);
+  //sf.setEmbolden(true);
+  //paint2.setStyle(SkPaint::kFill_Style);
+  //paint2.setColor(SK_ColorBLACK);
+  //auto text = SkTextBlob::MakeFromString("87", sf);
+  //canvas.drawTextBlob(text.get(), x, 96, paint2);
+
+  return gfx::ConvertToJavaBitmap(bitmap, gfx::OomBehavior::kReturnNullOnOom).Release();
 }
 
 static jobject _get_qr_bitmap(JNIEnv* env, jclass jcaller, jstring j_key) {
@@ -356,6 +401,7 @@ static JNINativeMethod methods[] = {
   { "luckyShake", "(I)V", (void *)_lucky_shake },
   { "publishMessage", "(Ljava/lang/String;)V", (void *)_publish_message },
   { "getQRBitmap", "(Ljava/lang/String;)Landroid/graphics/Bitmap;", (void *)_get_qr_bitmap },
+  { "getScoreBitmap", "(I)Landroid/graphics/Bitmap;", (void *)_get_score_bitmap },
   { "getLuckyAddr", "(I)Ljava/lang/String;", (void *)_get_lucky_addr },
   { "getLuckyPriv", "(I)Ljava/lang/String;", (void *)_get_lucky_priv },
   { "getRichAddr", "(I)Ljava/lang/String;", (void *)_get_rich_addr },
