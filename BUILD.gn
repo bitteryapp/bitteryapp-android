@@ -172,7 +172,7 @@ android_library("bittery_java") {
     "//third_party/androidx:androidx_appcompat_appcompat_java",
     "//third_party/androidx:androidx_recyclerview_recyclerview_java",
     "//third_party/androidx:androidx_coordinatorlayout_coordinatorlayout_java",
-    "//third_party/android_deps:android_firebase_bittery_java",
+    "//third_party/android_deps:android_firebase_bitteryapp_java",
     "//ui/android:ui_no_recycler_view_java",
   ]
 
@@ -190,7 +190,7 @@ android_resources("bittery_apk_resources") {
     "java/res/values/styles.xml",
     "java/res/values/dimens.xml",
     "java/res/values/colors.xml",
-    "java/res/values/games-ids.xml",
+    #"java/res/values/games-ids.xml",
     "java/res/layout/activity_main.xml",
     "java/res/layout/bittery_hit_item.xml",
     "java/res/layout/bittery_key_info.xml",
@@ -245,7 +245,7 @@ android_apk("bittery_apk") {
   proguard_enabled = true
 
   proguard_configs = [
-    "//bittery/java/proguard.flags",
+    "java/proguard.flags",
     "//chrome/android/proguard/main.flags",
     "//base/android/proguard/chromium_apk.flags",
     "//base/android/proguard/chromium_code.flags",

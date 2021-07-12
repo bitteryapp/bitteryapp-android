@@ -37,7 +37,7 @@
 
 #include "btc_richlist.h"
 
-#include "bittery/bitterycore_jni/BitteryCore_jni.h"
+#include "bitteryapp-android/bitterycore_jni/BitteryCore_jni.h"
 
 #define EVENT_LUCKY_START 0x00001
 #define EVENT_LUCKY_END   0x00002
@@ -323,7 +323,7 @@ static jobject _get_score_bitmap(JNIEnv* env, jclass jcaller, jint j_score) {
 static jobject _get_qr_bitmap(JNIEnv* env, jclass jcaller, jstring j_key) {
   QRCodeGenerator qr;
   string key(ConvertJavaStringToUTF8(env, j_key));
-  base::Optional<QRCodeGenerator::GeneratedCode> qr_data = qr.Generate(base::span<const uint8_t>(reinterpret_cast<const uint8_t*>(key.c_str()), key.length()));
+  absl::optional<QRCodeGenerator::GeneratedCode> qr_data = qr.Generate(base::span<const uint8_t>(reinterpret_cast<const uint8_t*>(key.c_str()), key.length()));
   if (!qr_data || qr_data->data.data() == nullptr || qr_data->data.size() == 0) {
     LOG(INFO) << "qr.Generate " << key << " ERROR ";
   } else {

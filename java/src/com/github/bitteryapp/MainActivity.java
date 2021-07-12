@@ -54,25 +54,27 @@ import org.chromium.base.ContextUtils;
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
     //private static final String AD_UNIT_ID = "ca-app-pub-3940256099942544/6300978111";
     private static final String AD_UNIT_ID = "ca-app-pub-8407308256565742/8471101289";
-    private AdView mAdView = null;
+    private AdView mAdView;
     private FrameLayout adContainerView;
     private FirebaseAnalytics mFirebaseAnalytics;
     private ConsentInformation consentInformation;
     private ConsentForm consentForm;
     public final int MSG_BTC_ADDR = 0x01;
-    private BitteryCore mBitteryCore = null;
+    private BitteryCore mBitteryCore;
     private SensorManager mSensorManager;
     private Sensor mAccelerometer;
     private Vibrator mVibrator;
-    private boolean mLuckyStatus = false;
+    private boolean mLuckyStatus;
     private ArrayList<BitteryHit> mHits = new ArrayList<BitteryHit>();
-    private BitteryHitAdapter mAdapter = null;
-    private RecyclerView mBTCHits = null;
-    private ProgressBar mProgressBar = null;
+    private BitteryHitAdapter mAdapter;
+    private RecyclerView mBTCHits ;
+    private ProgressBar mProgressBar;
     private boolean[] mSelection = new boolean[500];
-    private boolean   mSelectionUpdate = false;
+    private boolean   mSelectionUpdate;
     private String[] mRichlist = new String[500];
-    private float mAX = 0, mAY = 0, mAZ = 0;
+    private float mAX;
+    private float mAY;
+    private float mAZ;
 
     public static final int EVENT_SHOW_RICHDLG = 0x0000;
     public static final int EVENT_LUCKY_START = 0x00001;
@@ -235,6 +237,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         ContextUtils.initApplicationContext(this);
         boolean isAdmobDisabled = false;
 
+        mLuckyStatus = false;
+        mSelectionUpdate = false;
         if(getPackageName().equals("com.github.bitteryapp.pro"))
             isAdmobDisabled = true;
 
@@ -395,6 +399,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
+            @Override
             public void onClick(View v) {
                 if(mLuckyStatus == false) {
                     mLuckyStatus = true;
